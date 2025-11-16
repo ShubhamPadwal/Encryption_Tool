@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AES Encrypt/Decrypt</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 30px;
+        }
+        .container {
+            width: 600px;
+            background: white;
+            margin: auto;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #bbb;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 12px;
+            width: 48%;
+            margin: 1%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>AES Encryption/Decryption</h2>
+
+    <label><strong>Working Key:</strong></label>
+    <input type="text" id="key" placeholder="Enter working key">
+
+    <label><strong>Text to Encrypt:</strong></label>
+    <textarea id="plain" placeholder="Enter plain text..."></textarea>
+
+    <label><strong>Text to Decrypt (Hex):</strong></label>
+    <textarea id="cipher" placeholder="Enter encrypted hex string..."></textarea>
+
+    <button onclick="doEncrypt()">Encrypt</button>
+    <button onclick="doDecrypt()">Decrypt</button>
+
+    <h3>Result:</h3>
+    <textarea id="result" readonly></textarea>
+</div>
+
+<script>
+
+// PHP uses fixed IV: 00 01 02 ... 0F
+const iv = CryptoJS.enc.Hex.parse("000102030405060708090a0b0c0d0e0f");
+
+function md5Key(key) {
+    // PHP uses: md5(key) → 32 hex chars → convert to 16 bytes
+    return CryptoJS.enc.Hex.parse(CryptoJS.MD5(key).toString());
+}
+
+function doEncrypt() {
+    const key = document.getElementById("key").value;
+    const plain = document.getElementById("plain").value;
+
+    if (!key || !plain) {
+        document.getElementById("result").value = "Missing key or text.";
+        return;
+    }
+
+    const aesKey = md5Key(key);
+
+    const encrypted = CryptoJS.AES.encrypt(plain, aesKey, {
+        iv: iv,
+        padding: CryptoJS.pad.Pkcs7,
+        mode: CryptoJS.mode.CBC
+    });
+
+    // Convert to hex (just like PHP bin2hex)
+    document.getElementById("result").value = encrypted.ciphertext.toString(CryptoJS.enc.Hex);
+}
+
+function doDecrypt() {
+    const key = document.getElementById("key").value;
+    const cipherHex = document.getElementById("cipher").value;
+
+    if (!key || !cipherHex) {
+        document.getElementById("result").value = "Missing key or hex string.";
+        return;
+    }
+
+    const aesKey = md5Key(key);
+    const cipherBytes = CryptoJS.enc.Hex.parse(cipherHex);
+
+    const decrypted = CryptoJS.AES.decrypt(
+        { ciphertext: cipherBytes },
+        aesKey,
+        {
+            iv: iv,
+            padding: CryptoJS.pad.Pkcs7,
+            mode: CryptoJS.mode.CBC
+        }
+    );
+
+    document.getElementById("result").value = decrypted.toString(CryptoJS.enc.Utf8);
+}
+
+</script>
+
+</body>
+
+</html>
